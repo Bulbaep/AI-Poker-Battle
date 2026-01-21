@@ -716,7 +716,10 @@ def play_poker_hand():
             game_state['current_game_hands'] = 0
         
     except Exception as e:
-        add_log(f"ERROR in hand: {str(e)}")
+        import traceback
+        error_msg = f"ERROR in hand: {type(e).__name__}: {str(e)}"
+        add_log(error_msg)
+        add_log(f"Traceback: {traceback.format_exc()[:500]}")  # First 500 chars
         game_state['round'] = 'error'
 
 def game_loop():
