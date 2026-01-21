@@ -1392,29 +1392,22 @@
                     document.getElementById('total-hands').textContent = state.total_hands;
                     document.getElementById('biggest-pot').textContent = `$${state.biggest_pot}`;
                     
-                    // Update betting odds based on GAMES won (RPS Battle style)
+                    // Update betting odds based on GAMES won (with Bayesian smoothing)
                     const totalGamesWon = (state.claude_games_won || 0) + (state.gpt_games_won || 0);
                     
                     if (totalGamesWon > 0) {
-                        // Calculate win rates as percentages
-                        const claudeWinRate = (state.claude_games_won / totalGamesWon) * 100;
-                        const gptWinRate = (state.gpt_games_won / totalGamesWon) * 100;
+                        // Bayesian smoothing: add +1 virtual win to each player to avoid extreme odds
+                        const claudeSmoothed = (state.claude_games_won || 0) + 1;
+                        const gptSmoothed = (state.gpt_games_won || 0) + 1;
+                        const totalSmoothed = claudeSmoothed + gptSmoothed;
+                        
+                        // Calculate win rates as percentages with smoothing
+                        const claudeWinRate = (claudeSmoothed / totalSmoothed) * 100;
+                        const gptWinRate = (gptSmoothed / totalSmoothed) * 100;
                         
                         // Odds formula: 100 / win_rate_percentage
-                        // Cap at 10.0x when win rate approaches 0
-                        let claudeOdds, gptOdds;
-                        
-                        if (claudeWinRate > 0) {
-                            claudeOdds = Math.min(100 / claudeWinRate, 10.0).toFixed(2);
-                        } else {
-                            claudeOdds = '10.0';
-                        }
-                        
-                        if (gptWinRate > 0) {
-                            gptOdds = Math.min(100 / gptWinRate, 10.0).toFixed(2);
-                        } else {
-                            gptOdds = '10.0';
-                        }
+                        const claudeOdds = (100 / claudeWinRate).toFixed(2);
+                        const gptOdds = (100 / gptWinRate).toFixed(2);
                         
                         document.getElementById('claude-odds').textContent = claudeOdds + 'x';
                         document.getElementById('gpt-odds').textContent = gptOdds + 'x';
