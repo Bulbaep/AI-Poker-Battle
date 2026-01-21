@@ -71,6 +71,7 @@
             overflow-y: auto;
             height: calc(35vh - 20px);
             margin-bottom: 12px;
+            scroll-behavior: smooth; /* Smooth auto-scroll */
         }
         
         /* Dark scrollbar for terminal only */
@@ -413,6 +414,7 @@
             padding: 12px;
             height: calc(27vh - 20px);
             overflow-y: auto;
+            scroll-behavior: smooth; /* Smooth auto-scroll */
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE/Edge */
         }
@@ -640,6 +642,7 @@
             height: calc(33vh - 20px);
             overflow-y: auto;
             margin-bottom: 12px;
+            scroll-behavior: smooth; /* Smooth auto-scroll */
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE/Edge */
         }
@@ -1443,15 +1446,21 @@
                     ).join('');
                     document.getElementById('logs').innerHTML = logsHTML;
                     
-                    // Auto-scroll logs
+                    // Auto-scroll terminal to bottom (scroll the parent .terminal, not #logs)
                     const logsDiv = document.getElementById('logs');
-                    logsDiv.scrollTop = logsDiv.scrollHeight;
+                    const terminalDiv = logsDiv.parentElement; // The .terminal div
+                    terminalDiv.scrollTop = terminalDiv.scrollHeight;
                     
                     // Update thoughts
                     const thoughtsHTML = data.thoughts.map(thought => 
                         `<div class="thought-entry">${thought}</div>`
                     ).join('');
                     document.getElementById('thoughts').innerHTML = thoughtsHTML;
+                    
+                    // Auto-scroll thoughts to bottom
+                    const thoughtsDiv = document.getElementById('thoughts');
+                    const thoughtsSection = thoughtsDiv.parentElement; // The .thoughts-section div
+                    thoughtsSection.scrollTop = thoughtsSection.scrollHeight;
                     
                     // ===== NEW FEATURES: DATA & STATS =====
                     
@@ -1499,6 +1508,11 @@
                             `;
                         }).join('');
                         document.getElementById('hand-history').innerHTML = historyHTML;
+                        
+                        // Auto-scroll hand-history to bottom
+                        const handHistoryDiv = document.getElementById('hand-history');
+                        const handHistorySection = handHistoryDiv.parentElement; // The .hand-history-section div
+                        handHistorySection.scrollTop = handHistorySection.scrollHeight;
                     } else {
                         document.getElementById('hand-history').innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No hands played yet</div>';
                     }
