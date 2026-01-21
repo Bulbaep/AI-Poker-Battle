@@ -732,6 +732,227 @@
         .card-reveal {
             animation: slideIn 0.5s ease-out;
         }
+
+        /* ============================================
+           MOBILE RESPONSIVE DESIGN
+           ============================================ */
+        
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 8px;
+                min-height: auto;
+            }
+
+            /* Hide left column (terminal, thoughts, history) on initial view */
+            .container > div:first-child {
+                order: 4;
+                margin-top: 20px;
+            }
+
+            /* Center column (game) comes first */
+            .container > div:nth-child(2) {
+                order: 1;
+            }
+
+            /* Right column (stats, betting) comes third */
+            .container > div:nth-child(3) {
+                order: 3;
+                margin-top: 10px;
+            }
+
+            /* Reduce card sizes drastically for mobile */
+            .playing-card {
+                width: 40px;
+                height: 56px;
+                font-size: 24px;
+                line-height: 56px;
+                margin: 0 2px;
+                border-radius: 4px;
+            }
+
+            /* Player sections - more compact */
+            .player-section {
+                padding: 12px;
+                margin: 6px 0;
+            }
+
+            .player-name {
+                font-size: 14px;
+            }
+
+            .player-stack {
+                font-size: 12px;
+            }
+
+            .win-probability {
+                font-size: 16px;
+            }
+
+            /* Community section - compact */
+            .community-section {
+                padding: 12px;
+                margin: 6px 0;
+            }
+
+            .community-title {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            .community-cards {
+                margin: 8px 0;
+                min-height: 60px;
+            }
+
+            .pot-amount {
+                font-size: 18px;
+            }
+
+            .street-indicator {
+                font-size: 10px;
+                padding: 4px 12px;
+            }
+
+            /* Action badges - smaller */
+            .action-badge {
+                font-size: 14px;
+                padding: 6px 12px;
+                margin-top: 8px;
+            }
+
+            /* Blind badges - smaller */
+            #claude-blind-badge,
+            #gpt-blind-badge {
+                font-size: 10px !important;
+                padding: 2px 6px !important;
+            }
+
+            /* Streak indicator - smaller */
+            .streak-indicator {
+                font-size: 10px;
+                padding: 3px 8px;
+                bottom: 8px;
+            }
+
+            /* Winner banner - smaller */
+            .winner-banner {
+                font-size: 12px;
+                padding: 8px;
+                margin: 6px 0;
+            }
+
+            /* Hand countdown timer - adjust for mobile */
+            #hand-countdown-display {
+                right: 10px !important;
+                font-size: 32px !important;
+            }
+
+            #hand-countdown-display > div:first-child,
+            #hand-countdown-display > div:last-child {
+                font-size: 10px !important;
+            }
+
+            /* Stats section */
+            .stats-section {
+                padding: 12px;
+            }
+
+            .stats-section h2 {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+
+            .stat-item {
+                padding: 8px 0;
+            }
+
+            .stat-label {
+                font-size: 11px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            /* Betting section */
+            .betting-section {
+                padding: 12px;
+            }
+
+            .betting-section h3 {
+                font-size: 14px;
+            }
+
+            .odds-display {
+                font-size: 12px;
+            }
+
+            /* Terminal, Thoughts, History - compact for scroll area */
+            .terminal,
+            .ai-thoughts-section,
+            .hand-history-section {
+                padding: 12px;
+                max-height: 300px;
+            }
+
+            .terminal h2,
+            .ai-thoughts-section h2,
+            .hand-history-section h2 {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            .log-entry,
+            .thought-entry {
+                font-size: 11px;
+                padding: 4px;
+            }
+
+            /* Reduce margins and padding globally on mobile */
+            .solana-contract {
+                padding: 8px;
+                font-size: 10px;
+            }
+
+            .contract-address {
+                font-size: 9px;
+                padding: 4px 8px;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 480px) {
+            .playing-card {
+                width: 35px;
+                height: 49px;
+                font-size: 20px;
+                line-height: 49px;
+                margin: 0 1px;
+            }
+
+            .player-name {
+                font-size: 12px;
+            }
+
+            .win-probability {
+                font-size: 14px;
+            }
+
+            .pot-amount {
+                font-size: 16px;
+            }
+
+            #hand-countdown-display {
+                font-size: 28px !important;
+            }
+        }
     </style>
 </head>
 <body>
