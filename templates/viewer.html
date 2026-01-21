@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Poker Battle - Claude vs GPT</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0d0d0d;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        /* Card Styles */
+        .playing-card {
+            display: inline-block;
+            width: 60px;
+            height: 84px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            margin: 0 3px;
+            position: relative;
+            vertical-align: middle;
+            font-size: 36px;
+            line-height: 84px;
+            text-align: center;
+        }
+
+        .playing-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            transition: transform 0.2s ease-out;
+        }
+
+        .playing-card.back {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-red {
+            color: #dc143c;
+        }
+
+        .card-black {
+            color: #000;
+        }
+
+        /* Terminal Section */
+        .terminal {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            overflow-y: auto;
+            height: calc(35vh - 20px);
+            margin-bottom: 12px;
+        }
+        
+        /* Dark scrollbar for terminal only */
+        .terminal::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .terminal::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 10px;
+        }
+        
+        .terminal::-webkit-scrollbar-thumb {
+            background: #1a1a1a;
+            border-radius: 10px;
+        }
+        
+        .terminal::-webkit-scrollbar-thumb:hover {
+            background: #252525;
+        }
+        
+        /* Firefox */
+        .terminal {
+            scrollbar-width: thin;
+            scrollbar-color: #2a2a2a #0d0d0d;
+        }
+
+        .terminal h2 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 6px;
+        }
+
+        .log-entry {
+            color: #00ff00;
+            font-size: 13px;
+            margin: 3px 0;
+            line-height: 1.5;
+        }
+
+        /* Main Game Section */
+        .game-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .game-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 3px solid #ffd700;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .game-header h1 {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        
+        .contract-address {
+            color: #4a9eff;
+            font-size: 10px;
+            margin-top: 3px;
+            font-family: monospace;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        
+        .contract-address:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .hand-info {
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .poker-table {
+            background: #1a1a1a;
+            border: 3px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .player-section {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 10px 0;
+            position: relative;
+            min-height: 140px;
+        }
+
+        .player-section.claude {
+            border: 3px solid #4a9eff;
+        }
+
+        .player-section.gpt {
+            border: 3px solid #ff6b35;
+        }
+        
+        /* Active/Thinking state with glowing border */
+        .player-section.active {
+            animation: glowPulse 1.5s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        }
+        
+        .player-section.claude.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(74, 158, 255, 0.8);
+        }
+        
+        .player-section.gpt.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(255, 107, 53, 0.8);
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+                border-width: 3px;
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 215, 0, 0.9);
+                border-width: 4px;
+            }
+        }
+
+        .player-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .player-name.claude {
+            color: #4a9eff;
+        }
+
+        .player-name.gpt {
+            color: #ff6b35;
+        }
+
+        /* Win Probability Display */
+        .win-probability {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 2px solid;
+            background: rgba(0, 0, 0, 0.5);
+            animation: probabilityUpdate 0.5s ease-out;
+        }
+
+        .win-probability.claude-prob {
+            color: #4a9eff;
+            border-color: #4a9eff;
+        }
+
+        .win-probability.gpt-prob {
+            color: #ff6b35;
+            border-color: #ff6b35;
+        }
+
+        @keyframes probabilityUpdate {
+            0% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .player-stack {
+            font-size: 18px;
+            color: #00ff00;
+            margin-bottom: 15px;
+        }
+
+        /* Action Badge Styles */
+        .action-badge {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+            animation: actionPulse 0.5s ease-out;
+            z-index: 10;
+            min-width: 100px;
+        }
+
+        .action-badge.fold {
+            background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+            color: white;
+            border: 3px solid #ff0000;
+        }
+
+        .action-badge.call, .action-badge.check {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #000;
+            border: 3px solid #ffcc00;
+        }
+
+        .action-badge.raise {
+            background: linear-gradient(135deg, #00ff00 0%, #008000 100%);
+            color: #000;
+            border: 3px solid #00ff00;
+        }
+        
+        .action-badge.thinking {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #000;
+            border: 3px solid #ffd700;
+            animation: thinkingPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes thinkingPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: translateY(-50%) scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(-50%) scale(1.05);
+            }
+        }
+
+        .action-badge .raise-amount {
+            display: block;
+            font-size: 28px;
+            margin-top: 5px;
+            color: #003300;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        @keyframes actionPulse {
+            0% {
+                transform: translateY(-50%) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(-50%) scale(1.1);
+            }
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .player-cards {
+            margin: 15px 0;
+            min-height: 120px;
+        }
+
+        .community-section {
+            background: #0f4d0f;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .community-title {
+            font-size: 14px;
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .community-cards {
+            margin: 10px 0;
+            min-height: 90px;
+        }
+
+        .pot-amount {
+            font-size: 22px;
+            color: #00ff00;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        
+        /* Winner Banner */
+        .winner-banner {
+            background: linear-gradient(135deg, #ffd700 0%, #ff6b35 100%);
+            border: 3px solid #fff;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            display: none;
+            animation: winnerPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes winnerPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
+        }
+        
+        /* Hot Streak Indicator */
+        .streak-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff4500 0%, #ff6347 100%);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            animation: fireAnimation 0.5s ease-in-out infinite alternate;
+            z-index: 10;
+        }
+        
+        @keyframes fireAnimation {
+            0% { transform: translateX(-50%) translateY(0px); }
+            100% { transform: translateX(-50%) translateY(-3px); }
+        }
+        
+        /* Hand History Panel */
+        .hand-history-section {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            height: calc(27vh - 20px);
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        .hand-history-section::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+        
+        .hand-history-section h2 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 6px;
+        }
+        
+        .history-item {
+            background: #2d2d2d;
+            border-left: 3px solid #ffd700;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+        
+        .history-item.claude-win {
+            border-left-color: #4a9eff;
+        }
+        
+        .history-item.gpt-win {
+            border-left-color: #ff6b35;
+        }
+        
+        .history-winner {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        
+        .history-detail {
+            color: #aaa;
+            font-size: 10px;
+        }
+        
+        /* Stack Graph */
+        .stack-graph-section {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .stack-graph-section h2 {
+            color: #00ff00;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 6px;
+        }
+
+        .street-indicator {
+            background: #ffd700;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .countdown {
+            font-size: 24px;
+            color: #ff6b35;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        /* Countdown Animation */
+        @keyframes countdownPulse {
+            0%, 100% {
+                transform: scale(1);
+                color: #ff6b35;
+            }
+            50% {
+                transform: scale(1.1);
+                color: #ffd700;
+            }
+        }
+        
+        #countdown-timer {
+            animation: countdownPulse 1s ease-in-out infinite;
+        }
+
+        /* Betting Section */
+        .betting-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 3px solid #ffd700;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+        }
+
+        .betting-section h3 {
+            font-size: 18px;
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .betting-info {
+            color: #aaa;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .bet-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-direction: column;
+        }
+
+        .bet-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            opacity: 0.5;
+            width: 100%;
+        }
+
+        .bet-btn.claude {
+            background: #1a1a1a;
+            color: #4a9eff;
+            border-color: #4a9eff;
+        }
+
+        .bet-btn.gpt {
+            background: #1a1a1a;
+            color: #ff6b35;
+            border-color: #ff6b35;
+        }
+
+        .coming-soon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ffd700;
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .odds-display {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .odds-item {
+            padding: 10px;
+            background: #2d2d2d;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .stats-section h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 6px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #333;
+            font-size: 14px;
+        }
+
+        .stat-label {
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .stat-value.claude {
+            color: #4a9eff;
+        }
+
+        .stat-value.gpt {
+            color: #ff6b35;
+        }
+
+        /* Thoughts Section */
+        .thoughts-section {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            height: calc(33vh - 20px);
+            overflow-y: auto;
+            margin-bottom: 12px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        .thoughts-section::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+
+        .thoughts-section h2 {
+            color: #ff6b35;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #ff6b35;
+            padding-bottom: 6px;
+        }
+
+        .thought-entry {
+            color: #ccc;
+            font-size: 13px;
+            margin: 5px 0;
+            font-style: italic;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+
+            .terminal {
+                display: none;
+            }
+
+            .game-header h1 {
+                font-size: 24px;
+            }
+
+            .playing-card {
+                width: 60px;
+                height: 84px;
+                font-size: 36px;
+                line-height: 84px;
+            }
+            
+            .player-section > div[style*="flex"] {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            
+            .action-badge {
+                position: static;
+                transform: none;
+                margin: 10px 0;
+                font-size: 24px;
+                padding: 15px 20px;
+            }
+            
+            .action-badge .raise-amount {
+                font-size: 20px;
+            }
+            
+            .win-probability {
+                font-size: 18px;
+                padding: 6px 12px;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .thinking {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .card-reveal {
+            animation: slideIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Column (Terminal + AI Thoughts) -->
+        <div style="margin-top: 118px;">
+            <!-- Terminal Section -->
+            <div class="terminal">
+                <h2>📡 LIVE TERMINAL</h2>
+                <div id="logs"></div>
+            </div>
+            
+            <!-- AI Thoughts (moved from right column) -->
+            <div class="thoughts-section">
+                <h2>🤔 AI THOUGHTS</h2>
+                <div id="thoughts"></div>
+            </div>
+            
+            <!-- Hand History -->
+            <div class="hand-history-section">
+                <h2>📜 HAND HISTORY</h2>
+                <div id="hand-history"></div>
+            </div>
+        </div>
+
+        <!-- Main Game Section (Center) -->
+        <div class="game-section">
+            <!-- Header -->
+            <div class="game-header">
+                <h1>🃏 AI POKER BATTLE</h1>
+                <div class="contract-address" onclick="navigator.clipboard.writeText('JEAJEkFgSpVHJGeSbpzEpBhkpiQT7uPeJffb1D9qpump')" title="Click to copy">
+                    CA: JEAJEkFgSpVHJGeSbpzEpBhkpiQT7uPeJffb1D9qpump
+                </div>
+                <div class="hand-info">
+                    <span id="hand-number">Hand #0</span> • 
+                    <span id="round-info">Round: Waiting</span>
+                </div>
+            </div>
+
+            <!-- Poker Table -->
+            <div class="poker-table">
+                <!-- Claude -->
+                <div class="player-section claude">
+                    <!-- Streak Indicator -->
+                    <div id="claude-streak" class="streak-indicator">🔥 0 WIN STREAK!</div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="player-name claude">CLAUDE HAIKU</div>
+                            <span id="claude-blind-badge" style="font-size: 13px; padding: 4px 10px; border-radius: 6px; font-weight: bold; letter-spacing: 0.5px;"></span>
+                        </div>
+                        <div class="win-probability claude-prob" id="claude-probability">50%</div>
+                    </div>
+                    <div class="player-stack">Stack: $<span id="claude-stack">1000</span></div>
+                    
+                    <!-- Action Badge -->
+                    <div id="claude-action-badge" class="action-badge" style="display: none;"></div>
+                    
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div class="player-cards" id="claude-cards-container">
+                            <!-- Cards will be injected here -->
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 14px; color: #4a9eff; font-weight: bold; margin-bottom: 5px;">Recent Actions:</div>
+                            <div id="claude-actions" style="font-size: 14px; color: #aaa;">
+                                <div>Waiting...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winner Banner -->
+                <div id="winner-banner" class="winner-banner"></div>
+
+                <!-- Community Cards -->
+                <div class="community-section">
+                    <div class="street-indicator" id="street-indicator">WAITING</div>
+                    
+                    <!-- Hand Countdown Timer (5s between hands) - Positioned absolute on the right -->
+                    <div id="hand-countdown-display" style="display: none; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 48px; font-weight: bold; color: #ffd700; text-align: center; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);">
+                        <div style="font-size: 14px; color: #aaa; margin-bottom: 5px;">Next hand in</div>
+                        <div id="hand-countdown-number">5</div>
+                        <div style="font-size: 14px; color: #aaa; margin-top: 5px;">seconds</div>
+                    </div>
+                    
+                    <div class="community-title">COMMUNITY CARDS</div>
+                    <div class="community-cards" id="community-cards-container">
+                        <!-- Cards will be injected here -->
+                    </div>
+                    <div class="pot-amount">Pot: $<span id="pot">0</span></div>
+                </div>
+
+                <!-- GPT -->
+                <div class="player-section gpt">
+                    <!-- Streak Indicator -->
+                    <div id="gpt-streak" class="streak-indicator">🔥 0 WIN STREAK!</div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="player-name gpt">GPT-4O-MINI</div>
+                            <span id="gpt-blind-badge" style="font-size: 13px; padding: 4px 10px; border-radius: 6px; font-weight: bold; letter-spacing: 0.5px;"></span>
+                        </div>
+                        <div class="win-probability gpt-prob" id="gpt-probability">50%</div>
+                    </div>
+                    <div class="player-stack">Stack: $<span id="gpt-stack">1000</span></div>
+                    
+                    <!-- Action Badge -->
+                    <div id="gpt-action-badge" class="action-badge" style="display: none;"></div>
+                    
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div class="player-cards" id="gpt-cards-container">
+                            <!-- Cards will be injected here -->
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 14px; color: #ff6b35; font-weight: bold; margin-bottom: 5px;">Recent Actions:</div>
+                            <div id="gpt-actions" style="font-size: 14px; color: #aaa;">
+                                <div>Waiting...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section -->
+        <div style="margin-top: 118px;">
+            <!-- Stats -->
+            <div class="stats-section">
+                <h2>📊 BATTLE STATISTICS</h2>
+                <div class="stat-item">
+                    <span class="stat-label">🏆 Games Won (Claude)</span>
+                    <span class="stat-value claude" id="claude-games-won">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🏆 Games Won (GPT)</span>
+                    <span class="stat-value gpt" id="gpt-games-won">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Hands Won (Claude)</span>
+                    <span class="stat-value claude" id="claude-hands-won" style="font-size: 14px;">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Hands Won (GPT)</span>
+                    <span class="stat-value gpt" id="gpt-hands-won" style="font-size: 14px;">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Biggest Pot</span>
+                    <span class="stat-value" id="biggest-pot">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Hands</span>
+                    <span class="stat-value" id="total-hands">0</span>
+                </div>
+                
+                <!-- Gameplay Stats (integrated without title) -->
+                <div style="background: #0d0d0d; border-radius: 5px; padding: 12px; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #888; font-size: 11px;">🔥 Total All-ins:</span>
+                        <span style="color: #ff6b35; font-size: 11px; font-weight: bold;" id="total-allins">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #888; font-size: 11px;">💰 Average Pot:</span>
+                        <span style="color: #ffd700; font-size: 11px; font-weight: bold;" id="avg-pot">$0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #888; font-size: 11px;">⚡ Longest Game:</span>
+                        <span style="color: #4a9eff; font-size: 11px; font-weight: bold;" id="longest-game">0 hands</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #888; font-size: 11px;">🚀 Shortest Game:</span>
+                        <span style="color: #4a9eff; font-size: 11px; font-weight: bold;" id="shortest-game">0 hands</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #888; font-size: 11px;">🎲 Current Blinds:</span>
+                        <span style="color: #00ff00; font-size: 11px; font-weight: bold;" id="current-blinds">$5/$10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Betting Section -->
+            <div class="betting-section" style="margin-top: 20px;">
+                <div class="coming-soon">COMING SOON</div>
+                <h3>🎲 PLACE YOUR BETS</h3>
+                <div class="betting-info">Bets only in $AIWARS token</div>
+                
+                <!-- Countdown Timer -->
+                <div id="betting-countdown-section" style="display: none; margin: 20px 0; padding: 20px; background: #2d2d2d; border-radius: 10px; border: 2px solid #ffd700;">
+                    <div id="countdown-message" style="color: #ffd700; font-size: 16px; font-weight: bold; margin-bottom: 10px; text-align: center;">
+                        ⏰ Place your bets for the NEW GAME!
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 36px; font-weight: bold; color: #ff6b35;" id="countdown-timer">60</span>
+                        <span style="font-size: 18px; color: #aaa;">seconds</span>
+                    </div>
+                </div>
+                
+                <div class="bet-buttons">
+                    <button class="bet-btn claude">BET CLAUDE</button>
+                    <button class="bet-btn gpt">BET GPT</button>
+                </div>
+                <div class="odds-display">
+                    <div class="odds-item">
+                        <strong>Claude Odds:</strong> <span id="claude-odds">2.0x</span>
+                    </div>
+                    <div class="odds-item">
+                        <strong>GPT Odds:</strong> <span id="gpt-odds">2.0x</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to create a playing card HTML element
+        function createCard(cardSymbol) {
+            if (!cardSymbol || cardSymbol === '🂠') {
+                return '<div class="playing-card back">🂠</div>';
+            }
+            
+            // Determine if card is red or black
+            const isRed = cardSymbol.includes('♥') || cardSymbol.includes('♦');
+            const colorClass = isRed ? 'card-red' : 'card-black';
+            
+            return `<div class="playing-card ${colorClass} card-reveal">${cardSymbol}</div>`;
+        }
+
+        // Auto-refresh game state
+        function updateGameState() {
+            fetch('/api/state')
+                .then(response => response.json())
+                .then(data => {
+                    const state = data.game_state;
+                    
+                    // Update hand info
+                    document.getElementById('hand-number').textContent = `Hand #${state.hand_number}`;
+                    document.getElementById('round-info').textContent = `Round: ${state.round}`;
+                    
+                    // Update street indicator
+                    const streetText = state.street ? state.street.toUpperCase() : 'WAITING';
+                    document.getElementById('street-indicator').textContent = streetText;
+                    
+                    // Update hand countdown timer (between hands)
+                    const handCountdownDisplay = document.getElementById('hand-countdown-display');
+                    const handCountdownNumber = document.getElementById('hand-countdown-number');
+                    
+                    if (state.hand_countdown > 0) {
+                        handCountdownDisplay.style.display = 'block';
+                        handCountdownNumber.textContent = state.hand_countdown;
+                    } else {
+                        handCountdownDisplay.style.display = 'none';
+                    }
+                    
+                    // Update stacks
+                    document.getElementById('claude-stack').textContent = state.claude_stack;
+                    document.getElementById('gpt-stack').textContent = state.gpt_stack;
+                    
+                    // Update win probabilities
+                    document.getElementById('claude-probability').textContent = state.claude_win_probability.toFixed(1) + '%';
+                    document.getElementById('gpt-probability').textContent = state.gpt_win_probability.toFixed(1) + '%';
+                    
+                    // Update countdown in betting section
+                    const countdownSection = document.getElementById('betting-countdown-section');
+                    const countdownTimer = document.getElementById('countdown-timer');
+                    const countdownMessage = document.getElementById('countdown-message');
+                    
+                    if (state.countdown > 0) {
+                        countdownSection.style.display = 'block';
+                        countdownTimer.textContent = state.countdown;
+                        countdownMessage.textContent = '⏰ Place your bets for the NEW GAME!';
+                    } else {
+                        countdownSection.style.display = 'block';
+                        countdownTimer.textContent = '--';
+                        countdownMessage.textContent = '🎮 Game in progress, betting opens after bust';
+                    }
+                    
+                    // Update pot
+                    document.getElementById('pot').textContent = state.pot;
+                    
+                    // Update Claude cards (show real cards)
+                    const claudeCardsContainer = document.getElementById('claude-cards-container');
+                    if (state.claude_cards && state.claude_cards.length > 0) {
+                        const newClaudeCards = state.claude_cards.map(card => createCard(card)).join('');
+                        if (claudeCardsContainer.innerHTML !== newClaudeCards) {
+                            claudeCardsContainer.innerHTML = newClaudeCards;
+                        }
+                    } else {
+                        const backCards = createCard('🂠') + createCard('🂠');
+                        if (claudeCardsContainer.innerHTML !== backCards) {
+                            claudeCardsContainer.innerHTML = backCards;
+                        }
+                    }
+                    
+                    // Update GPT cards (show real cards)
+                    const gptCardsContainer = document.getElementById('gpt-cards-container');
+                    if (state.gpt_cards && state.gpt_cards.length > 0) {
+                        const newGptCards = state.gpt_cards.map(card => createCard(card)).join('');
+                        if (gptCardsContainer.innerHTML !== newGptCards) {
+                            gptCardsContainer.innerHTML = newGptCards;
+                        }
+                    } else {
+                        const backCards = createCard('🂠') + createCard('🂠');
+                        if (gptCardsContainer.innerHTML !== backCards) {
+                            gptCardsContainer.innerHTML = backCards;
+                        }
+                    }
+                    
+                    // Update community cards (progressive reveal)
+                    const communityCardsContainer = document.getElementById('community-cards-container');
+                    if (state.community_cards && state.community_cards.length > 0) {
+                        const newCommunityCards = state.community_cards.map(card => createCard(card)).join('');
+                        if (communityCardsContainer.innerHTML !== newCommunityCards) {
+                            communityCardsContainer.innerHTML = newCommunityCards;
+                        }
+                    } else {
+                        // Show 5 card backs when no community cards
+                        const backCards = createCard('🂠') + createCard('🂠') + createCard('🂠') + createCard('🂠') + createCard('🂠');
+                        if (communityCardsContainer.innerHTML !== backCards) {
+                            communityCardsContainer.innerHTML = backCards;
+                        }
+                    }
+                    
+                    // Update actions feed - separate by player
+                    const claudeActions = [];
+                    const gptActions = [];
+                    
+                    if (state.action_history && state.action_history.length > 0) {
+                        state.action_history.forEach(action => {
+                            if (action.includes('Claude')) {
+                                claudeActions.push(action.replace('Claude ', ''));
+                            } else if (action.includes('GPT')) {
+                                gptActions.push(action.replace('GPT ', ''));
+                            }
+                        });
+                    }
+                    
+                    // Update Claude actions (last 3)
+                    const claudeActionsDiv = document.getElementById('claude-actions');
+                    if (claudeActions.length > 0) {
+                        claudeActionsDiv.innerHTML = claudeActions.slice(0, 3).map(action => 
+                            `<div style="margin: 3px 0;">→ ${action}</div>`
+                        ).join('');
+                    } else {
+                        claudeActionsDiv.innerHTML = '<div>Waiting...</div>';
+                    }
+                    
+                    // Update GPT actions (last 3)
+                    const gptActionsDiv = document.getElementById('gpt-actions');
+                    if (gptActions.length > 0) {
+                        gptActionsDiv.innerHTML = gptActions.slice(0, 3).map(action => 
+                            `<div style="margin: 3px 0;">→ ${action}</div>`
+                        ).join('');
+                    } else {
+                        gptActionsDiv.innerHTML = '<div>Waiting...</div>';
+                    }
+                    
+                    // Update Claude action badge
+                    const claudeBadge = document.getElementById('claude-action-badge');
+                    const claudeSection = document.querySelector('.player-section.claude');
+                    
+                    if (state.claude_is_thinking) {
+                        // Show THINKING badge
+                        claudeBadge.className = 'action-badge thinking';
+                        claudeBadge.innerHTML = 'THINKING...';
+                        claudeBadge.style.display = 'block';
+                        claudeSection.classList.add('active');
+                    } else {
+                        claudeSection.classList.remove('active');
+                        
+                        if (state.claude_current_action) {
+                            const action = state.claude_current_action;
+                            let badgeClass = '';
+                            let badgeContent = '';
+                            
+                            if (action === 'FOLD') {
+                                badgeClass = 'fold';
+                                badgeContent = 'FOLD';
+                            } else if (action === 'CALL' || action === 'CHECK') {
+                                badgeClass = action.toLowerCase();
+                                badgeContent = action;
+                            } else if (action.startsWith('RAISE')) {
+                                badgeClass = 'raise';
+                                const amount = action.replace('RAISE ', '');
+                                badgeContent = `RAISE<span class="raise-amount">${amount}</span>`;
+                            }
+                            
+                            claudeBadge.className = 'action-badge ' + badgeClass;
+                            claudeBadge.innerHTML = badgeContent;
+                            claudeBadge.style.display = 'block';
+                        } else {
+                            claudeBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update GPT action badge
+                    const gptBadge = document.getElementById('gpt-action-badge');
+                    const gptSection = document.querySelector('.player-section.gpt');
+                    
+                    if (state.gpt_is_thinking) {
+                        // Show THINKING badge
+                        gptBadge.className = 'action-badge thinking';
+                        gptBadge.innerHTML = 'THINKING...';
+                        gptBadge.style.display = 'block';
+                        gptSection.classList.add('active');
+                    } else {
+                        gptSection.classList.remove('active');
+                        
+                        if (state.gpt_current_action) {
+                            const action = state.gpt_current_action;
+                            let badgeClass = '';
+                            let badgeContent = '';
+                            
+                            if (action === 'FOLD') {
+                                badgeClass = 'fold';
+                                badgeContent = 'FOLD';
+                            } else if (action === 'CALL' || action === 'CHECK') {
+                                badgeClass = action.toLowerCase();
+                                badgeContent = action;
+                            } else if (action.startsWith('RAISE')) {
+                                badgeClass = 'raise';
+                                const amount = action.replace('RAISE ', '');
+                                badgeContent = `RAISE<span class="raise-amount">${amount}</span>`;
+                            }
+                            
+                            gptBadge.className = 'action-badge ' + badgeClass;
+                            gptBadge.innerHTML = badgeContent;
+                            gptBadge.style.display = 'block';
+                        } else {
+                            gptBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update stats
+                    document.getElementById('claude-games-won').textContent = state.claude_games_won || 0;
+                    document.getElementById('gpt-games-won').textContent = state.gpt_games_won || 0;
+                    document.getElementById('claude-hands-won').textContent = state.claude_wins;
+                    document.getElementById('gpt-hands-won').textContent = state.gpt_wins;
+                    document.getElementById('total-hands').textContent = state.total_hands;
+                    document.getElementById('biggest-pot').textContent = `$${state.biggest_pot}`;
+                    
+                    // Update betting odds based on GAMES won (RPS Battle style)
+                    const totalGamesWon = (state.claude_games_won || 0) + (state.gpt_games_won || 0);
+                    
+                    if (totalGamesWon > 0) {
+                        // Calculate win rates as percentages
+                        const claudeWinRate = (state.claude_games_won / totalGamesWon) * 100;
+                        const gptWinRate = (state.gpt_games_won / totalGamesWon) * 100;
+                        
+                        // Odds formula: 100 / win_rate_percentage
+                        // Cap at 10.0x when win rate approaches 0
+                        let claudeOdds, gptOdds;
+                        
+                        if (claudeWinRate > 0) {
+                            claudeOdds = Math.min(100 / claudeWinRate, 10.0).toFixed(2);
+                        } else {
+                            claudeOdds = '10.0';
+                        }
+                        
+                        if (gptWinRate > 0) {
+                            gptOdds = Math.min(100 / gptWinRate, 10.0).toFixed(2);
+                        } else {
+                            gptOdds = '10.0';
+                        }
+                        
+                        document.getElementById('claude-odds').textContent = claudeOdds + 'x';
+                        document.getElementById('gpt-odds').textContent = gptOdds + 'x';
+                    } else {
+                        // No games won yet - stay at default 2.0x until first game ends
+                        document.getElementById('claude-odds').textContent = '2.0x';
+                        document.getElementById('gpt-odds').textContent = '2.0x';
+                    }
+                    
+                    // Update blind badges (dealer/button/blinds)
+                    const claudeBlindBadge = document.getElementById('claude-blind-badge');
+                    const gptBlindBadge = document.getElementById('gpt-blind-badge');
+                    
+                    if (state.dealer === 'claude') {
+                        claudeBlindBadge.textContent = '🔘 DEALER / SMALL BLIND';
+                        claudeBlindBadge.style.background = '#ffd700';
+                        claudeBlindBadge.style.color = '#000';
+                        gptBlindBadge.textContent = 'BIG BLIND';
+                        gptBlindBadge.style.background = '#ff6b35';
+                        gptBlindBadge.style.color = '#fff';
+                    } else {
+                        claudeBlindBadge.textContent = 'BIG BLIND';
+                        claudeBlindBadge.style.background = '#4a9eff';
+                        claudeBlindBadge.style.color = '#fff';
+                        gptBlindBadge.textContent = '🔘 DEALER / SMALL BLIND';
+                        gptBlindBadge.style.background = '#ffd700';
+                        gptBlindBadge.style.color = '#000';
+                    }
+                    
+                    // Update logs
+                    const logsHTML = data.logs.map(log => 
+                        `<div class="log-entry">${log}</div>`
+                    ).join('');
+                    document.getElementById('logs').innerHTML = logsHTML;
+                    
+                    // Auto-scroll logs
+                    const logsDiv = document.getElementById('logs');
+                    logsDiv.scrollTop = logsDiv.scrollHeight;
+                    
+                    // Update thoughts
+                    const thoughtsHTML = data.thoughts.map(thought => 
+                        `<div class="thought-entry">${thought}</div>`
+                    ).join('');
+                    document.getElementById('thoughts').innerHTML = thoughtsHTML;
+                    
+                    // ===== NEW FEATURES: DATA & STATS =====
+                    
+                    // 1. Update Winner Banner
+                    const winnerBanner = document.getElementById('winner-banner');
+                    if (state.winning_hand_info && state.winning_hand_info !== '') {
+                        winnerBanner.textContent = state.winning_hand_info;
+                        winnerBanner.style.display = 'block';
+                    } else {
+                        winnerBanner.style.display = 'none';
+                    }
+                    
+                    // 2. Update Hot Streak Indicators
+                    const claudeStreak = document.getElementById('claude-streak');
+                    const gptStreak = document.getElementById('gpt-streak');
+                    
+                    if (state.claude_streak >= 3) {
+                        claudeStreak.textContent = `🔥 ${state.claude_streak} WIN STREAK!`;
+                        claudeStreak.style.display = 'block';
+                    } else {
+                        claudeStreak.style.display = 'none';
+                    }
+                    
+                    if (state.gpt_streak >= 3) {
+                        gptStreak.textContent = `🔥 ${state.gpt_streak} WIN STREAK!`;
+                        gptStreak.style.display = 'block';
+                    } else {
+                        gptStreak.style.display = 'none';
+                    }
+                    
+                    // 3. Update Hand History
+                    if (state.hand_history && state.hand_history.length > 0) {
+                        const historyHTML = state.hand_history.map(hand => {
+                            const winnerClass = hand.winner === 'Claude' ? 'claude-win' : 'gpt-win';
+                            return `
+                                <div class="history-item ${winnerClass}">
+                                    <div class="history-winner">
+                                        Hand #${hand.hand_number}: ${hand.winner === 'Claude' ? '🔵' : '🔴'} ${hand.winner.toUpperCase()} WINS
+                                    </div>
+                                    <div class="history-detail">
+                                        ${hand.hand_detail || 'No detail available'}<br>
+                                        Pot: $${hand.pot}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        document.getElementById('hand-history').innerHTML = historyHTML;
+                    } else {
+                        document.getElementById('hand-history').innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No hands played yet</div>';
+                    }
+                    
+                    // 4. Update Gameplay Stats
+                    document.getElementById('total-allins').textContent = state.total_allins || 0;
+                    
+                    // Calculate average pot
+                    let avgPot = 0;
+                    if (state.game_pots && state.game_pots.length > 0) {
+                        const sum = state.game_pots.reduce((a, b) => a + b, 0);
+                        avgPot = Math.round(sum / state.game_pots.length);
+                    }
+                    document.getElementById('avg-pot').textContent = `$${avgPot}`;
+                    
+                    document.getElementById('longest-game').textContent = (state.longest_game || 0) + ' hands';
+                    document.getElementById('shortest-game').textContent = (state.shortest_game || 0) + ' hands';
+                    
+                    // Calculate current blinds
+                    const blindLevel = Math.floor((state.hand_number || 0) / 10);
+                    const smallBlind = 5 + (blindLevel * 5);
+                    const bigBlind = smallBlind * 2;
+                    document.getElementById('current-blinds').textContent = `$${smallBlind}/$${bigBlind}`;
+                    
+                })
+                .catch(error => console.error('Error fetching state:', error));
+        }
+
+        // Update every 2 seconds
+        // Update game state every 1 second (was 2 seconds)
+        setInterval(updateGameState, 1000);
+        updateGameState(); // Initial load
+    </script>
+</body>
+</html>
