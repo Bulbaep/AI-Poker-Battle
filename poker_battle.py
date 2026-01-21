@@ -282,8 +282,8 @@ class AIPlayer(BasePokerPlayer):
             game_state['gpt_is_thinking'] = True
             game_state['gpt_current_action'] = ''
         
-        # Wait 3 seconds while "thinking"
-        time.sleep(3)
+        # Wait 5 seconds while "thinking"
+        time.sleep(5)
         
         # Clear thinking state
         if self.name == 'Claude':
@@ -746,9 +746,9 @@ def game_loop():
             game_state['countdown'] = 0
             play_poker_hand()
             
-            # 5 second pause between hands (for readability)
+            # 10 second pause between hands (for readability)
             game_state['round'] = 'hand_pause'
-            for i in range(5, 0, -1):
+            for i in range(10, 0, -1):
                 game_state['hand_countdown'] = i
                 time.sleep(1)
             game_state['hand_countdown'] = 0
