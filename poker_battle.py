@@ -540,6 +540,65 @@ def play_poker_hand():
     
     add_log(f"💰 Blinds: ${small_blind}/${big_blind} (Level {blind_level + 1})")
     
+    # Check if either player is busted (can't afford big blind)
+    if game_state['claude_stack'] < big_blind:
+        add_log(f"💀 CLAUDE IS BUSTED! (${game_state['claude_stack']} < ${big_blind} blind)")
+        game_state['claude_stack'] = 0
+        game_state['gpt_games_won'] += 1
+        add_log("🏆🏆🏆 GPT WINS THE GAME! CLAUDE IS BUSTED! 🏆🏆🏆")
+        
+        # Track game length for stats
+        if game_state['current_game_hands'] > 0:
+            if game_state['longest_game'] == 0 or game_state['current_game_hands'] > game_state['longest_game']:
+                game_state['longest_game'] = game_state['current_game_hands']
+            if game_state['shortest_game'] == 0 or game_state['current_game_hands'] < game_state['shortest_game']:
+                game_state['shortest_game'] = game_state['current_game_hands']
+        
+        # Reset for new game
+        add_log("=== NEW GAME STARTING IN 60 SECONDS ===")
+        add_log("💰 PLACE YOUR BETS NOW!")
+        game_state['claude_stack'] = 1000
+        game_state['gpt_stack'] = 1000
+        game_state['claude_wins'] = 0
+        game_state['gpt_wins'] = 0
+        game_state['hand_history'] = []
+        game_state['stack_history'] = []
+        game_state['biggest_pot'] = 0
+        game_state['wait_for_new_game'] = True
+        game_state['total_allins'] = 0
+        game_state['game_pots'] = []
+        game_state['current_game_hands'] = 0
+        return
+    
+    if game_state['gpt_stack'] < big_blind:
+        add_log(f"💀 GPT IS BUSTED! (${game_state['gpt_stack']} < ${big_blind} blind)")
+        game_state['gpt_stack'] = 0
+        game_state['claude_games_won'] += 1
+        add_log("🏆🏆🏆 CLAUDE WINS THE GAME! GPT IS BUSTED! 🏆🏆🏆")
+        
+        # Track game length for stats
+        if game_state['current_game_hands'] > 0:
+            if game_state['longest_game'] == 0 or game_state['current_game_hands'] > game_state['longest_game']:
+                game_state['longest_game'] = game_state['current_game_hands']
+            if game_state['shortest_game'] == 0 or game_state['current_game_hands'] < game_state['shortest_game']:
+                game_state['shortest_game'] = game_state['current_game_hands']
+        
+        # Reset for new game
+        add_log("=== NEW GAME STARTING IN 60 SECONDS ===")
+        add_log("💰 PLACE YOUR BETS NOW!")
+        game_state['claude_stack'] = 1000
+        game_state['gpt_stack'] = 1000
+        game_state['claude_wins'] = 0
+        game_state['gpt_wins'] = 0
+        game_state['hand_history'] = []
+        game_state['stack_history'] = []
+        game_state['biggest_pot'] = 0
+        game_state['wait_for_new_game'] = True
+        game_state['total_allins'] = 0
+        game_state['game_pots'] = []
+        game_state['current_game_hands'] = 0
+        return
+    
     # CRITICAL FIX: Use minimum stack to avoid money creation
     # PyPokerEngine gives same initial_stack to all players
     min_stack = min(game_state['claude_stack'], game_state['gpt_stack'])
