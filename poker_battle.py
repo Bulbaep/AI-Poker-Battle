@@ -782,15 +782,16 @@ def stop_game():
     add_log("⏸️ Game paused")
     return jsonify({'status': 'stopped'})
 
+# Start game loop in background thread (must be outside if __name__ for gunicorn)
+game_thread = threading.Thread(target=game_loop, daemon=True)
+game_thread.start()
+
+# Auto-start game
+game_state['is_playing'] = True
+game_state['wait_for_new_game'] = True  # Trigger initial countdown
+add_log("🎮 AI Poker Battle initialized!")
+
 if __name__ == '__main__':
-    # Start game loop in background thread
-    game_thread = threading.Thread(target=game_loop, daemon=True)
-    game_thread.start()
-    
-    # Auto-start game
-    game_state['is_playing'] = True
-    add_log("🎮 AI Poker Battle initialized!")
-    
-    # Run Flask app
+    # Run Flask app (only used for local development)
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
