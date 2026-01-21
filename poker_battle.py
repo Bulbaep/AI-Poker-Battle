@@ -407,10 +407,53 @@ Your decision:"""
                         if amount > max_amount:
                             amount = max_amount
                         
-                        # Final safety check - ensure amount is positive
-                        if amount < 0:
-                            add_log(f"⚠️ {self.name} tried invalid raise ${amount}, defaulting to call")
-                            return 'call', 0
+                        # CRITICAL: Additional validation for PyPokerEngine
+                        # PyPokerEngine is very strict about raise amounts
+                        # Force amount to be EXACTLY within [min, max] range
+                        strict_min = action['amount'].get('min', 20)
+                        strict_max = action['amount'].get('max', my_stack)
+                        
+                        # Round to nearest integer and strictly enforce bounds
+                        amount = int(round(amount))
+                        amount = max(strict_min, min(amount, strict_max))
+                        
+                        # Double-check: if still outside range, fallback to call
+                        if amount < strict_min or amount > strict_max:
+                            add_log(f"⚠️ {self.name} tried raise ${amount} (not in [{strict_min}, {strict_max}]), calling instead")
+                            # Fallback to call
+                            for call_action in valid_actions:
+                                if call_action['action'] == 'call':
+                                    add_log(f"{self.name} calls")
+                                    game_state['action_history'].insert(0, f"{self.name} calls")
+                                    if len(game_state['action_history']) > 10:
+                                        game_state['action_history'].pop()
+                                    if self.name == 'Claude':
+                                        game_state['claude_current_action'] = "CALL"
+                                    else:
+                                        game_state['gpt_current_action'] = "CALL"
+                                    return 'call', call_action['amount']
+                            # If call not available, fold
+                            add_log(f"{self.name} folds")
+                            return 'fold', 0
+                        
+                        # Final safety check - ensure amount is positive and reasonable
+                        if amount <= 0 or amount > my_stack:
+                            add_log(f"⚠️ {self.name} tried invalid raise ${amount}, calling instead")
+                            # Fallback to call
+                            for call_action in valid_actions:
+                                if call_action['action'] == 'call':
+                                    add_log(f"{self.name} calls")
+                                    game_state['action_history'].insert(0, f"{self.name} calls")
+                                    if len(game_state['action_history']) > 10:
+                                        game_state['action_history'].pop()
+                                    if self.name == 'Claude':
+                                        game_state['claude_current_action'] = "CALL"
+                                    else:
+                                        game_state['gpt_current_action'] = "CALL"
+                                    return 'call', call_action['amount']
+                            # If call not available, fold
+                            add_log(f"{self.name} folds")
+                            return 'fold', 0
                         
                         # Detect all-in
                         is_allin = (amount >= my_stack * 0.95)  # Consider 95%+ of stack as all-in
@@ -617,6 +660,21 @@ def play_poker_hand():
     config.register_player(name="GPT", algorithm=gpt_player)
     
     # Start game
+    try:
+        game_result = start_poker(config, verbose=0)
+    except Exception as poker_error:
+        # PyPokerEngine can still throw errors even with our validation
+        # This catches edge cases like "Invalid raise" that slip through
+        error_msg = str(poker_error)
+        if "raise" in error_msg.lower() or "invalid" in error_msg.lower():
+            add_log(f"⚠️ PyPokerEngine rejected an action: {error_msg}")
+            add_log(f"   Skipping this hand to avoid crash")
+            # Don't change stacks since hand wasn't completed
+            return
+        else:
+            # Re-raise if it's a different error
+            raise
+    
     try:
         game_result = start_poker(config, verbose=0)
         
