@@ -58,6 +58,8 @@ game_state = {
     'hand_history': [],  # For hand history panel (last 5 hands)
     'claude_streak': 0,  # Consecutive wins
     'gpt_streak': 0,  # Consecutive wins
+    'claude_excess': 0,  # Excess chips not in PyPokerEngine (for real-time updates)
+    'gpt_excess': 0,  # Excess chips not in PyPokerEngine (for real-time updates)
     'winning_hand_info': '',  # Detailed winner info
     'dealer': 'claude'  # Who is dealer/button (alternates each hand)
 }
@@ -525,13 +527,18 @@ Your decision:"""
         pass
     
     def receive_round_start_message(self, round_count, hole_card, seats):
+        # Don't update stacks during hand - only at the end
         pass
     
     def receive_street_start_message(self, street, round_state):
-        pass
+        # Update pot only (not stacks during hand)
+        if 'pot' in round_state:
+            game_state['pot'] = round_state['pot']['main']['amount']
     
     def receive_game_update_message(self, action, round_state):
-        pass
+        # Update pot only (not stacks during hand)
+        if 'pot' in round_state:
+            game_state['pot'] = round_state['pot']['main']['amount']
     
     def receive_round_result_message(self, winners, hand_info, round_state):
         pass
@@ -600,8 +607,11 @@ def play_poker_hand():
         # Reset for new game
         add_log("=== NEW GAME STARTING IN 60 SECONDS ===")
         add_log("💰 PLACE YOUR BETS NOW!")
+        game_state['hand_number'] = 0  # Reset hand counter
         game_state['claude_stack'] = 1000
         game_state['gpt_stack'] = 1000
+        game_state['claude_excess'] = 0
+        game_state['gpt_excess'] = 0
         game_state['claude_wins'] = 0
         game_state['gpt_wins'] = 0
         game_state['hand_history'] = []
@@ -629,8 +639,11 @@ def play_poker_hand():
         # Reset for new game
         add_log("=== NEW GAME STARTING IN 60 SECONDS ===")
         add_log("💰 PLACE YOUR BETS NOW!")
+        game_state['hand_number'] = 0  # Reset hand counter
         game_state['claude_stack'] = 1000
         game_state['gpt_stack'] = 1000
+        game_state['claude_excess'] = 0
+        game_state['gpt_excess'] = 0
         game_state['claude_wins'] = 0
         game_state['gpt_wins'] = 0
         game_state['hand_history'] = []
@@ -645,6 +658,10 @@ def play_poker_hand():
     # CRITICAL FIX: Use minimum stack to avoid money creation
     # PyPokerEngine gives same initial_stack to all players
     min_stack = min(game_state['claude_stack'], game_state['gpt_stack'])
+    
+    # Calculate and store excess chips (for real-time stack updates)
+    game_state['claude_excess'] = game_state['claude_stack'] - min_stack
+    game_state['gpt_excess'] = game_state['gpt_stack'] - min_stack
     
     # Setup game config with progressive blinds
     config = setup_config(
@@ -816,8 +833,11 @@ def play_poker_hand():
             # Reset for new game
             add_log("=== NEW GAME STARTING IN 60 SECONDS ===")
             add_log("💰 PLACE YOUR BETS NOW!")
+            game_state['hand_number'] = 0  # Reset hand counter
             game_state['claude_stack'] = 1000
             game_state['gpt_stack'] = 1000
+            game_state['claude_excess'] = 0
+            game_state['gpt_excess'] = 0
             game_state['claude_streak'] = 0
             game_state['gpt_streak'] = 0
             game_state['claude_wins'] = 0  # Reset hands won counter
